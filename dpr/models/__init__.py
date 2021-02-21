@@ -19,6 +19,13 @@ def init_hf_bert_biencoder(args, **kwargs):
     return get_bert_biencoder_components(args, **kwargs)
 
 
+def init_hf_herbert_biencoder(args, **kwargs):
+    if importlib.util.find_spec("transformers") is None:
+        raise RuntimeError('Please install transformers lib')
+    from .hf_models import get_herbert_biencoder_components
+    return get_herbert_biencoder_components(args, **kwargs)
+
+
 def init_hf_bert_reader(args, **kwargs):
     if importlib.util.find_spec("transformers") is None:
         raise RuntimeError('Please install transformers lib')
@@ -53,9 +60,15 @@ def init_hf_roberta_tenzorizer(args, **kwargs):
     from .hf_models import get_roberta_tensorizer
     return get_roberta_tensorizer(args)
 
+def init_hf_herbert_tenzorizer(args, **kwargs):
+    if importlib.util.find_spec("transformers") is None:
+        raise RuntimeError('Please install transformers lib')
+    from .hf_models import get_herbert_tensorizer
+    return get_herbert_tensorizer(args)
 
 BIENCODER_INITIALIZERS = {
     'hf_bert': init_hf_bert_biencoder,
+    'hf_herbert': init_hf_herbert_biencoder,
     'pytext_bert': init_pytext_bert_biencoder,
     'fairseq_roberta': init_fairseq_roberta_biencoder,
 }
@@ -67,6 +80,7 @@ READER_INITIALIZERS = {
 TENSORIZER_INITIALIZERS = {
     'hf_bert': init_hf_bert_tenzorizer,
     'hf_roberta': init_hf_roberta_tenzorizer,
+    'hf_herbert': init_hf_herbert_tenzorizer,
     'pytext_bert': init_hf_bert_tenzorizer,  # using HF's code as of now
     'fairseq_roberta': init_hf_roberta_tenzorizer,  # using HF's code as of now
 }

@@ -19,7 +19,7 @@ from transformers.modeling_bert import BertConfig, BertModel
 from transformers.optimization import AdamW
 from transformers.tokenization_bert import BertTokenizer
 from transformers.tokenization_roberta import RobertaTokenizer
-
+from transformers.tokenization_herbert import HerbertTokenizer
 from dpr.utils.data_utils import Tensorizer
 from .biencoder import BiEncoder
 from .reader import Reader
@@ -65,6 +65,44 @@ def get_bert_biencoder_components(args, inference_only: bool = False, **kwargs):
     return tensorizer, biencoder, optimizer
 
 
+def get_herbert_biencoder_components(args, inference_only: bool = False, **kwargs):
+    dropout = args.dropout if hasattr(args, "dropout") else 0.0
+    question_encoder = HFBertEncoder.init_encoder(
+        args.pretrained_model_cfg,
+        projection_dim=args.projection_dim,
+        dropout=dropout,
+        **kwargs
+    )
+    ctx_encoder = HFBertEncoder.init_encoder(
+        args.pretrained_model_cfg,
+        projection_dim=args.projection_dim,
+        dropout=dropout,
+        **kwargs
+    )
+
+    fix_ctx_encoder = (
+        args.fix_ctx_encoder if hasattr(args, "fix_ctx_encoder") else False
+    )
+    biencoder = BiEncoder(
+        question_encoder, ctx_encoder, fix_ctx_encoder=fix_ctx_encoder
+    )
+
+    optimizer = (
+        get_optimizer(
+            biencoder,
+            learning_rate=args.learning_rate,
+            adam_eps=args.adam_eps,
+            weight_decay=args.weight_decay,
+        )
+        if not inference_only
+        else None
+    )
+
+    tensorizer = get_herbert_tensorizer(args)
+
+    return tensorizer, biencoder, optimizer
+
+
 def get_bert_reader_components(args, inference_only: bool = False, **kwargs):
     dropout = args.dropout if hasattr(args, "dropout") else 0.0
     encoder = HFBertEncoder.init_encoder(
@@ -103,6 +141,14 @@ def get_roberta_tensorizer(args, tokenizer=None):
             args.pretrained_model_cfg, do_lower_case=args.do_lower_case
         )
     return RobertaTensorizer(tokenizer, args.sequence_length)
+
+
+def get_herbert_tensorizer(args, tokenizer=None):
+    if not tokenizer:
+        tokenizer = get_herbert_tokenizer(
+            args.pretrained_model_cfg, do_lower_case=args.do_lower_case
+        )
+    return HerbertTensorizer(tokenizer, args.sequence_length)
 
 
 def get_optimizer(
@@ -148,6 +194,13 @@ def get_roberta_tokenizer(pretrained_cfg_name: str, do_lower_case: bool = True):
     )
 
 
+def get_herbert_tokenizer(pretrained_cfg_name: str, do_lower_case: bool = True):
+    # still uses HF code for tokenizer since they are the same
+    return HerbertTokenizer.from_pretrained(
+        pretrained_cfg_name, do_lower_case=do_lower_case
+    )
+
+
 class HFBertEncoder(BertModel):
     def __init__(self, config, project_dim: int = 0):
         BertModel.__init__(self, config)
@@ -157,6 +210,7 @@ class HFBertEncoder(BertModel):
         )
         self.init_weights()
 
+    #TODO: change to use auto model and tokenizers or HerbertModel and tokenizer
     @classmethod
     def init_encoder(
         cls, cfg_name: str, projection_dim: int = 0, dropout: float = 0.1, **kwargs
@@ -263,5 +317,12 @@ class BertTensorizer(Tensorizer):
 class RobertaTensorizer(BertTensorizer):
     def __init__(self, tokenizer, max_length: int, pad_to_max: bool = True):
         super(RobertaTensorizer, self).__init__(
+            tokenizer, max_length, pad_to_max=pad_to_max
+        )
+
+
+class HerbertTensorizer(BertTensorizer):
+    def __init__(self, tokenizer, max_length: int, pad_to_max: bool = True):
+        super(HerbertTensorizer, self).__init__(
             tokenizer, max_length, pad_to_max=pad_to_max
         )

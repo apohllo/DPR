@@ -210,7 +210,7 @@ class HFBertEncoder(BertModel):
         )
         self.init_weights()
 
-    #TODO: change to use auto model and tokenizers or HerbertModel and tokenizer
+    #TODO: change to use auto model and tokenizers
     @classmethod
     def init_encoder(
         cls, cfg_name: str, projection_dim: int = 0, dropout: float = 0.1, **kwargs

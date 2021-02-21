@@ -174,8 +174,8 @@ class BiEncoder(nn.Module):
             hard_neg_ctxs = hard_neg_ctxs[0:num_hard_negatives]
 
             all_ctxs = [positive_ctx] + neg_ctxs + hard_neg_ctxs
-            hard_negatives_start_idx = 1
-            hard_negatives_end_idx = 1 + len(hard_neg_ctxs)
+            hard_negatives_start_idx = num_other_negatives + 1  # originally that was 1 which I don't think is right
+            hard_negatives_end_idx = num_other_negatives + 1 + len(hard_neg_ctxs)
 
             current_ctxs_len = len(ctx_tensors)
 

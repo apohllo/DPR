@@ -104,6 +104,7 @@ class BiEncoderTrainer(object):
         self.scheduler_state = None
         self.best_validation_result = None
         self.best_cp_name = None
+        self.insert_title = args.insert_title
         if saved_state:
             self._load_saved_state(saved_state)
 
@@ -421,14 +422,14 @@ class BiEncoderTrainer(object):
             biencoder_batch = BiEncoder.create_biencoder_input(
                 samples_batch,
                 self.tensorizer,
-                True,
+                self.insert_title,
                 num_hard_negatives,
                 num_other_negatives,
                 shuffle=True,
                 shuffle_positives=args.shuffle_positive_ctx,
             )
 
-            loss, correct_cnt = _do_biencoder_fwd_pass(
+            loss, correct_cnt = _do_biencoder_fwd_pass( ## TODO
                 self.biencoder, biencoder_batch, self.tensorizer, args
             )
 
@@ -722,6 +723,11 @@ def main():
         default=0,
         type=int,
         help="amount of 'other' negative ctx per question",
+    )
+    parser.add_argument(
+        "--insert_title",
+        action='store_true',
+        help="whether to create input as 'title [sep] text' pair"
     )
     parser.add_argument(
         "--train_files_upsample_rates",

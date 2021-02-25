@@ -163,10 +163,10 @@ class BiEncoder(nn.Module):
                 positive_ctxs = sample["positive_ctxs"]
                 positive_ctx = positive_ctxs[np.random.choice(len(positive_ctxs))]
                 retry_counter = 0
-                while positive_ctx in used_ctxs and retry_counter < max_retrys:
+                while positive_ctx['text'] in used_ctxs and retry_counter < max_retrys:
                     positive_ctx = positive_ctxs[np.random.choice(len(positive_ctxs))]
                     retry_counter += 1
-                used_ctxs.add(positive_ctx)
+                used_ctxs.add(positive_ctx['text'])
             else:
                 positive_ctx = sample["positive_ctxs"][0]
 

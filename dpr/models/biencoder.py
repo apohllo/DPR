@@ -136,6 +136,7 @@ class BiEncoder(nn.Module):
         num_other_negatives: int = 0,
         shuffle: bool = True,
         shuffle_positives: bool = False,
+        max_retrys: int = 100,
     ) -> BiEncoderBatch:
         """
         Creates a batch of the biencoder training tuple.
@@ -146,6 +147,7 @@ class BiEncoder(nn.Module):
         :param num_other_negatives: amount of other negatives per question (taken from samples' pools)
         :param shuffle: shuffles negative passages pools
         :param shuffle_positives: shuffles positive passages pools
+        :param max_retrys: max retry count to find unique positive context
         :return: BiEncoderBatch tuple
         """
         question_tensors = []
@@ -153,14 +155,22 @@ class BiEncoder(nn.Module):
         positive_ctx_indices = []
         hard_neg_ctx_indices = []
 
+        used_ctxs = set()
         for sample in samples:
             # ctx+ & [ctx-] composition
             # as of now, take the first(gold) ctx+ only
             if shuffle and shuffle_positives:
                 positive_ctxs = sample["positive_ctxs"]
                 positive_ctx = positive_ctxs[np.random.choice(len(positive_ctxs))]
+                retry_counter = 0
+                while positive_ctx in used_ctxs and retry_counter < max_retrys:
+                    positive_ctx = positive_ctxs[np.random.choice(len(positive_ctxs))]
+                    retry_counter += 1
+                used_ctxs.add(positive_ctx)
             else:
                 positive_ctx = sample["positive_ctxs"][0]
+
+            #TODO: probably add negative_ctxs validation
 
             neg_ctxs = sample["negative_ctxs"]
             hard_neg_ctxs = sample["hard_negative_ctxs"]

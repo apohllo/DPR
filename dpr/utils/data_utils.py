@@ -108,6 +108,48 @@ class ShardedDataIterator(object):
     def total_data_len(self) -> int:
         return len(self.data)
 
+    def validate_and_reconstruct(self, items, shard_samples, i, epoch, max_retrys=100):
+        seed = self.shuffle_seed + epoch + 1
+
+
+        reconstruct_rnd = random.Random(seed)
+
+        questions = set()
+        for i, item in enumerate(items):
+            question = normalize_question(item['question'])
+            if question in questions:
+                logger.debug("same questions in batch")
+                new_question = reconstruct_rnd.choice(shard_samples)
+                retry_counter = 0
+                while normalize_question(new_question['question']) in questions and retry_counter < max_retrys:
+                    new_question = reconstruct_rnd.choice(shard_samples)
+                    retry_counter += 1
+
+                items[i] = new_question
+                questions.add(normalize_question(new_question['question']))
+            else:
+                questions.add(question)
+
+        contexts = set()
+        for i, item in enumerate(items):
+            if tuple(item['positive_ctxs']) in contexts:
+                logger.debug("same positive ctxs in batch")
+                new_question = reconstruct_rnd.choice(shard_samples)
+                questions.remove(normalize_question(item['question']))
+                retry_counter = 0
+                while (normalize_question(new_question['question']) in questions or
+                        tuple(new_question['positive_ctxs']) in contexts) and retry_counter < max_retrys:
+                    new_question = reconstruct_rnd.choice(shard_samples)
+                    retry_counter += 1
+
+                items[i] = new_question
+                contexts.add(tuple(new_question['positive_ctxs']))
+                questions.add(normalize_question(new_question['question']))
+            else:
+                contexts.add(tuple(item['positive_ctxs']))
+
+        return items
+
     def iterate_data(self, epoch: int = 0) -> Iterator[List]:
         if self.shuffle:
             # to be able to resume, same shuffling should be used when starting from a failed/stopped iteration
@@ -123,9 +165,12 @@ class ShardedDataIterator(object):
             self.iteration * self.batch_size, len(shard_samples), self.batch_size
         ):
             items = shard_samples[i : i + self.batch_size]
+
             if self.strict_batch_size and len(items) < self.batch_size:
                 logger.debug("Extending batch to max size")
                 items.extend(shard_samples[0 : self.batch_size - len(items)])
+
+            items = self.validate_and_reconstruct(items, shard_samples, i, epoch)
             self.iteration += 1
             yield items
 
@@ -134,6 +179,7 @@ class ShardedDataIterator(object):
             logger.debug("Fulfilling non complete shard=".format(self.shard_id))
             self.iteration += 1
             batch = shard_samples[0 : self.batch_size]
+            batch = self.validate_and_reconstruct(batch, shard_samples, self.iteration, epoch)
             yield batch
 
         logger.debug(
@@ -153,9 +199,9 @@ class ShardedDataIterator(object):
 
 
 def normalize_question(question: str) -> str:
-    if question[-1] == "?":
+    if question[-1] in ["?", ",", ".", ":"]:
         question = question[:-1]
-    return question
+    return question.strip()
 
 
 class Tensorizer(object):

@@ -130,23 +130,26 @@ class ShardedDataIterator(object):
             else:
                 questions.add(question)
 
+        def ctxs_to_tuple(ctxs):
+            return tuple([ctx['text'] for ctx in ctxs])
+
         contexts = set()
         for i, item in enumerate(items):
-            if tuple(item['positive_ctxs']) in contexts:
+            if ctxs_to_tuple(item['positive_ctxs']) in contexts:
                 logger.debug("same positive ctxs in batch")
                 new_question = reconstruct_rnd.choice(shard_samples)
                 questions.remove(normalize_question(item['question']))
                 retry_counter = 0
                 while (normalize_question(new_question['question']) in questions or
-                        tuple(new_question['positive_ctxs']) in contexts) and retry_counter < max_retrys:
+                        ctxs_to_tuple(new_question['positive_ctxs']) in contexts) and retry_counter < max_retrys:
                     new_question = reconstruct_rnd.choice(shard_samples)
                     retry_counter += 1
 
                 items[i] = new_question
-                contexts.add(tuple(new_question['positive_ctxs']))
+                contexts.add(ctxs_to_tuple(new_question['positive_ctxs']))
                 questions.add(normalize_question(new_question['question']))
             else:
-                contexts.add(tuple(item['positive_ctxs']))
+                contexts.add(ctxs_to_tuple(item['positive_ctxs']))
 
         return items
 

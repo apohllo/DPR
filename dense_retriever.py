@@ -72,7 +72,7 @@ class DenseRetriever(object):
         self.tensorizer = tensorizer
         self.index = index
 
-    def generate_question_vectors(self, questions: List[str]) -> T:
+    def generate_question_vectors(self, questions: List[str], device) -> T:
         n = len(questions)
         bsz = self.batch_size
         query_vectors = []
@@ -87,8 +87,8 @@ class DenseRetriever(object):
                     for q in questions[batch_start : batch_start + bsz]
                 ]
 
-                q_ids_batch = torch.stack(batch_token_tensors, dim=0).cuda()
-                q_seg_batch = torch.zeros_like(q_ids_batch).cuda()
+                q_ids_batch = torch.stack(batch_token_tensors, dim=0).to(device)
+                q_seg_batch = torch.zeros_like(q_ids_batch).to(device)
                 q_attn_mask = self.tensorizer.get_attn_mask(q_ids_batch)
                 _, out, _ = self.question_encoder(q_ids_batch, q_seg_batch, q_attn_mask)
 
@@ -283,7 +283,7 @@ def main(args):
         questions.append(question)
         question_answers.append(answers)
 
-    questions_tensor = retriever.generate_question_vectors(questions)
+    questions_tensor = retriever.generate_question_vectors(questions, args.device)
 
     # get top k results
     top_ids_and_scores = retriever.get_top_docs(questions_tensor.numpy(), args.n_docs)

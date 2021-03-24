@@ -14,6 +14,7 @@ import pathlib
 
 import argparse
 import csv
+import sys
 import logging
 import pickle
 from typing import List, Tuple
@@ -129,6 +130,7 @@ def main(args):
     logger.info("reading data from file=%s", args.ctx_file)
 
     rows = []
+    csv.field_size_limit(sys.maxsize)
     with open(args.ctx_file) as tsvfile:
         reader = csv.reader(tsvfile, delimiter="\t")
         # file format: doc_id, doc_text, title

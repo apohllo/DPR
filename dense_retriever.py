@@ -11,6 +11,7 @@
 
 import argparse
 import os
+import sys
 import csv
 import glob
 import json
@@ -146,9 +147,11 @@ def validate(
     return match_stats.questions_doc_hits
 
 
-def load_passages(ctx_file: str) -> Dict[object, Tuple[str, str]]:
+def load_passages(ctx_file: str) -> Dict[object, Tuple[str, str, str]]:
     docs = {}
     logger.info("Reading data from: %s", ctx_file)
+    csv.field_size_limit(sys.maxsize)
+
     if ctx_file.endswith(".gz"):
         with gzip.open(ctx_file, "rt") as tsvfile:
             reader = csv.reader(
@@ -168,7 +171,7 @@ def load_passages(ctx_file: str) -> Dict[object, Tuple[str, str]]:
             # file format: doc_id, doc_text, title
             for row in reader:
                 if row[0] != "id":
-                    docs[row[0]] = (row[1], row[2])
+                    docs[row[0]] = (row[1], row[2], row[3])
     return docs
 
 
@@ -200,6 +203,7 @@ def save_results(
                         "id": results_and_scores[0][c],
                         "title": docs[c][1],
                         "text": docs[c][0],
+                        "content_childrens": docs[c][2],
                         "score": scores[c],
                         "has_answer": hits[c],
                     }

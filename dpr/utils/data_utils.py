@@ -214,7 +214,7 @@ class Tensorizer(object):
 
     # Note: title, if present, is supposed to be put before text (i.e. optional title + document body)
     def text_to_tensor(
-        self, text: str, title: str = None, add_special_tokens: bool = True, pad_to_ma: bool = True
+        self, text: str, title: str = None, add_special_tokens: bool = True, pad_to_max: bool = True
     ):
         raise NotImplementedError
 

@@ -429,7 +429,7 @@ class BiEncoderTrainer(object):
                 shuffle_positives=args.shuffle_positive_ctx,
             )
 
-            loss, correct_cnt = _do_biencoder_fwd_pass( ## TODO
+            loss, correct_cnt = _do_biencoder_fwd_pass(
                 self.biencoder, biencoder_batch, self.tensorizer, args
             )
 

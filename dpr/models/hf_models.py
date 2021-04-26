@@ -210,10 +210,10 @@ class HFBertEncoder(BertModel):
         )
         self.init_weights()
 
-    #TODO: change to use auto model and tokenizers
+    # TODO: change to use auto model and tokenizers
     @classmethod
     def init_encoder(
-        cls, cfg_name: str, projection_dim: int = 0, dropout: float = 0.1, **kwargs
+            cls, cfg_name: str, projection_dim: int = 0, dropout: float = 0.1, **kwargs
     ) -> BertModel:
         cfg = BertConfig.from_pretrained(cfg_name if cfg_name else "bert-base-uncased")
         if dropout != 0:
@@ -253,44 +253,40 @@ class HFBertEncoder(BertModel):
 
 class BertTensorizer(Tensorizer):
     def __init__(
-        self, tokenizer: BertTokenizer, max_length: int, pad_to_max: bool = True
+            self, tokenizer: BertTokenizer, max_length: int, pad_to_max: bool = True
     ):
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.pad_to_max = pad_to_max
+        self.text_sep = f" {tokenizer.sep_token} "
 
     def text_to_tensor(
-        self, text: str, title: str = None, add_special_tokens: bool = True
+            self, *texts, add_special_tokens: bool = True, pad_to_max: bool = True
     ):
-        text = text.strip()
+        texts = list(texts)
+        # validation and stripping
+        for idx, text in enumerate(texts):
+            assert isinstance(text, str), f"input should be of type str, found {type(text)}"
+            texts[idx] = text.strip()
 
         # tokenizer automatic padding is explicitly disabled since its inconsistent behavior
-        if title:
-            token_ids = self.tokenizer.encode(
-                title,
-                text_pair=text,
-                add_special_tokens=add_special_tokens,
-                max_length=self.max_length,
-                pad_to_max_length=False,
-                truncation=True,
-            )
-        else:
-            token_ids = self.tokenizer.encode(
-                text,
-                add_special_tokens=add_special_tokens,
-                max_length=self.max_length,
-                pad_to_max_length=False,
-                truncation=True,
-            )
+        token_ids = self.tokenizer.encode(
+            self.text_sep.join([t for t in texts if len(t) > 0]),
+            add_special_tokens=add_special_tokens,
+            max_length=self.max_length,
+            pad_to_max_length=False,
+            truncation=True
+        )
 
         seq_len = self.max_length
-        if self.pad_to_max and len(token_ids) < seq_len:
+        pad_to_max = pad_to_max and self.pad_to_max
+        if pad_to_max and len(token_ids) < seq_len:
             token_ids = token_ids + [self.tokenizer.pad_token_id] * (
-                seq_len - len(token_ids)
+                    seq_len - len(token_ids)
             )
         if len(token_ids) > seq_len:
             token_ids = token_ids[0:seq_len]
-            token_ids[-1] = self.tokenizer.sep_token_id
+            token_ids[-1] = self.tokenizer.sep_token_id  # MAYBE TODO: check if previous token is sep to avoid sep sep sequence # noqa
 
         return torch.tensor(token_ids)
 

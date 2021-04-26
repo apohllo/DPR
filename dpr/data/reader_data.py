@@ -159,7 +159,7 @@ def preprocess_retriever_data(
 
     def create_reader_sample_ids(sample: ReaderPassage, question: str):
         question_and_title = tensorizer.text_to_tensor(
-            sample.title, title=question, add_special_tokens=True
+            question, sample.title, add_special_tokens=True
         )
         if sample.passage_token_ids is None:
             sample.passage_token_ids = tensorizer.text_to_tensor(

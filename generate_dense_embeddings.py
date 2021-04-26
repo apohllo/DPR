@@ -61,7 +61,7 @@ def gen_ctx_vectors(
     for j, batch_start in enumerate(range(0, n, bsz)):
 
         batch_token_tensors = [
-            tensorizer.text_to_tensor(ctx[2] if insert_title else "", ctx[1])
+            tensorizer.text_to_tensor(ctx[2] if insert_title else None, ctx[1])
             for ctx in ctx_rows[batch_start : batch_start + bsz]
         ]
 

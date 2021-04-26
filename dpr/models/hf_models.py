@@ -263,7 +263,8 @@ class BertTensorizer(Tensorizer):
     def text_to_tensor(
             self, *texts, add_special_tokens: bool = True, pad_to_max: bool = True
     ):
-        texts = list(texts)
+        # distinguish empty string and skipped value (e.g. title) to have backward compatibility with previous version)
+        texts = [t for t in texts if t is not None]
         # validation and stripping
         for idx, text in enumerate(texts):
             assert isinstance(text, str), f"input should be of type str, found {type(text)}"
@@ -271,7 +272,7 @@ class BertTensorizer(Tensorizer):
 
         # tokenizer automatic padding is explicitly disabled since its inconsistent behavior
         token_ids = self.tokenizer.encode(
-            self.text_sep.join([t for t in texts if len(t) > 0]),
+            self.text_sep.join(texts),
             add_special_tokens=add_special_tokens,
             max_length=self.max_length,
             pad_to_max_length=False,

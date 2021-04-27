@@ -191,7 +191,7 @@ class BiEncoder(nn.Module):
 
             sample_ctxs_tensors = [
                 tensorizer.text_to_tensor(
-                    ctx["title"] if insert_title else "", ctx["text"]
+                    ctx["title"] if insert_title else None, ctx["text"]
                 )
                 for ctx in all_ctxs
             ]

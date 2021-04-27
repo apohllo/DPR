@@ -148,7 +148,7 @@ def main(args):
     )
     rows = rows[start_idx:end_idx]
 
-    data = gen_ctx_vectors(rows, encoder, tensorizer, True)
+    data = gen_ctx_vectors(rows, encoder, tensorizer, args.insert_title)
 
     file = args.out_file + "_" + str(args.shard_id) + ".pkl"
     pathlib.Path(os.path.dirname(file)).mkdir(parents=True, exist_ok=True)
@@ -190,6 +190,11 @@ if __name__ == "__main__":
         type=int,
         default=32,
         help="Batch size for the passage encoder forward pass",
+    )
+    parser.add_argument(
+        "--insert_title",
+        action='store_true',
+        help="whether to create input as 'title [sep] text' pair"
     )
     args = parser.parse_args()
 

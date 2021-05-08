@@ -17,6 +17,7 @@ import csv
 import sys
 import logging
 import pickle
+import json
 from typing import List, Tuple
 
 import numpy as np
@@ -49,7 +50,7 @@ logger.addHandler(console)
 
 
 def gen_ctx_vectors(
-    ctx_rows: List[Tuple[object, str, str]],
+    ctx_rows: List[Tuple[List[object], List[str]]],
     model: nn.Module,
     tensorizer: Tensorizer,
     insert_title: bool = True,
@@ -61,7 +62,7 @@ def gen_ctx_vectors(
     for j, batch_start in enumerate(range(0, n, bsz)):
 
         batch_token_tensors = [
-            tensorizer.text_to_tensor(ctx[2] if insert_title else None, ctx[1])
+            tensorizer.text_to_tensor(*ctx[1])
             for ctx in ctx_rows[batch_start : batch_start + bsz]
         ]
 
@@ -130,11 +131,34 @@ def main(args):
     logger.info("reading data from file=%s", args.ctx_file)
 
     rows = []
-    csv.field_size_limit(sys.maxsize)
-    with open(args.ctx_file) as tsvfile:
-        reader = csv.reader(tsvfile, delimiter="\t")
-        # file format: doc_id, doc_text, title
-        rows.extend([(row[0], row[1], row[2]) for row in reader if row[0] != "id"])
+
+    idx_rows = [name.strip() for name in args.idx_row_names.split(',') if not name.isspace()]
+    ctx_rows = [name.strip() for name in args.ctx_row_names.split(',') if not name.isspace()]
+
+    if args.ctx_file.endswith('.tsv'):
+        csv.field_size_limit(sys.maxsize)
+        with open(args.ctx_file) as tsvfile:
+            reader = csv.reader(tsvfile, delimiter="\t")
+            # file format: doc_id, doc_text, title
+            idx_rows = [int(row) for row in idx_rows]
+            ctx_rows = [int(row) for row in ctx_rows]
+
+            rows.extend([
+                ([row[r] for r in idx_rows], [row[r] for r in ctx_rows])
+                for row in reader if row[0] != "id"
+            ])
+    elif args.ctx_file.endswith('.jsonl'):
+        with open(args.ctx_file, 'r', encoding='utf-8') as f:
+            def read_jsonl(f):
+                for row in f:
+                    yield json.loads(row)
+
+            rows.extend([
+                ([row[r] for r in idx_rows], [row[r] for r in ctx_rows])
+                for row in read_jsonl(f)
+            ])
+    else:
+        raise ValueError('Unsupported file extension')
 
     shard_size = int(len(rows) / args.num_shards)
     start_idx = args.shard_id * shard_size
@@ -190,6 +214,18 @@ if __name__ == "__main__":
         type=int,
         default=32,
         help="Batch size for the passage encoder forward pass",
+    )
+    parser.add_argument(
+        "--idx_row_names",
+        type=str,
+        help="comma separated rows to use as an index",
+        required=True
+    )
+    parser.add_argument(
+        "--ctx_row_names",
+        type=str,
+        help="comma separated rows to use as an context",
+        required=True
     )
     parser.add_argument(
         "--insert_title",

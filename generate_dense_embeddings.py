@@ -144,7 +144,7 @@ def main(args):
             ctx_rows = [int(row) for row in ctx_rows]
 
             rows.extend([
-                ([row[r] for r in idx_rows], [row[r] for r in ctx_rows])
+                (tuple(row[r] for r in idx_rows), tuple(row[r] for r in ctx_rows))
                 for row in reader if row[0] != "id"
             ])
     elif args.ctx_file.endswith('.jsonl'):
@@ -154,7 +154,7 @@ def main(args):
                     yield json.loads(row)
 
             rows.extend([
-                ([row[r] for r in idx_rows], [row[r] for r in ctx_rows])
+                (tuple(row[r] for r in idx_rows), tuple(row[r] for r in ctx_rows))
                 for row in read_jsonl(f)
             ])
     else:

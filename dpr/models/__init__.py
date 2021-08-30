@@ -8,7 +8,7 @@
 import importlib
 
 """
- 'Router'-like set of methods for component initialization with lazy imports 
+ 'Router'-like set of methods for component initialization with lazy imports
 """
 
 
@@ -31,6 +31,12 @@ def init_hf_bert_reader(args, **kwargs):
         raise RuntimeError('Please install transformers lib')
     from .hf_models import get_bert_reader_components
     return get_bert_reader_components(args, **kwargs)
+
+def init_hf_herbert_reader(args, **kwargs):
+    if importlib.util.find_spec("transformers") is None:
+        raise RuntimeError('Please install transformers lib')
+    from .hf_models import get_herbert_reader_components
+    return get_herbert_reader_components(args, **kwargs)
 
 
 def init_pytext_bert_biencoder(args, **kwargs):
@@ -75,6 +81,7 @@ BIENCODER_INITIALIZERS = {
 
 READER_INITIALIZERS = {
     'hf_bert': init_hf_bert_reader,
+    'hf_herbert': init_hf_herbert_reader,
 }
 
 TENSORIZER_INITIALIZERS = {

@@ -126,6 +126,29 @@ def get_bert_reader_components(args, inference_only: bool = False, **kwargs):
     tensorizer = get_bert_tensorizer(args)
     return tensorizer, reader, optimizer
 
+def get_herbert_reader_components(args, inference_only: bool = False, **kwargs):
+    dropout = args.dropout if hasattr(args, "dropout") else 0.0
+    encoder = HFBertEncoder.init_encoder(
+        args.pretrained_model_cfg, projection_dim=args.projection_dim, dropout=dropout
+    )
+
+    hidden_size = encoder.config.hidden_size
+    reader = Reader(encoder, hidden_size)
+
+    optimizer = (
+        get_optimizer(
+            reader,
+            learning_rate=args.learning_rate,
+            adam_eps=args.adam_eps,
+            weight_decay=args.weight_decay,
+        )
+        if not inference_only
+        else None
+    )
+
+    tensorizer = get_herbert_tensorizer(args)
+    return tensorizer, reader, optimizer
+
 
 def get_bert_tensorizer(args, tokenizer=None):
     if not tokenizer:

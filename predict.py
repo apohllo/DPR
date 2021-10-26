@@ -71,7 +71,7 @@ ReaderQuestionPredictions = collections.namedtuple(
 )
 
 
-class ReaderTrainer(object):
+class ReaderPredictor(object):
     def __init__(self, args):
         self.args = args
 
@@ -188,8 +188,9 @@ class ReaderTrainer(object):
         print(all_results[0].id)
         best = list(all_results[0].predictions.values())[0]
         print(best.prediction_text)
-        print("Span %.2f" % best.span_score)
-        print("Relevance %.2f" % best.relevance_score)
+        print("Span: %.2f" % best.span_score)
+        print("Relevance: %.2f" % best.relevance_score)
+        print("Passage: %s" % passages[best.passage_index]["text"])
         return 0
 
     def _load_saved_state(self, saved_state: CheckpointState):
@@ -205,11 +206,6 @@ class ReaderTrainer(object):
         if saved_state.model_dict:
             logger.info("Loading model weights from saved state ...")
             model_to_load.load_state_dict(saved_state.model_dict)
-
-        logger.info("Loading saved optimizer state ...")
-        if saved_state.optimizer_dict:
-            self.optimizer.load_state_dict(saved_state.optimizer_dict)
-        self.scheduler_state = saved_state.scheduler_dict
 
     def _get_best_prediction(
         self,
@@ -349,9 +345,8 @@ def main():
 
     setup_args_gpu(args)
     set_seed(args)
-    print_args(args)
 
-    trainer = ReaderTrainer(args)
+    trainer = ReaderPredictor(args)
     question = "Kto był pierwszym królem Polski?"
     passages = [
         {
